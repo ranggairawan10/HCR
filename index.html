@@ -898,6 +898,121 @@ footer[data-page].page-active {
 .program-page-content { display: none; }
 .program-page-content.active { display: block; animation: pageFadeIn 0.25s ease; }
 
+
+/* ============================================================
+   HAMBURGER & MOBILE MENU
+   ============================================================ */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.hamburger:hover { background: var(--bg); }
+.hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--ink);
+  border-radius: 2px;
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  transform-origin: center;
+}
+.hamburger.open span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.hamburger.open span:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+.hamburger.open span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* Mobile overlay backdrop */
+.mobile-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 149;
+  backdrop-filter: blur(2px);
+}
+.mobile-overlay.open { display: block; }
+
+@media (max-width: 900px) {
+  /* Show hamburger */
+  .hamburger { display: flex; }
+
+  /* Hide doc label on mobile */
+  .nav-doc-label { display: none; }
+
+  /* Mobile slide-in menu */
+  #navLinks {
+    position: fixed !important;
+    top: 0;
+    right: -100%;
+    bottom: 0;
+    width: 280px;
+    max-width: 85vw;
+    background: var(--surface);
+    flex-direction: column !important;
+    gap: 0 !important;
+    padding: 80px 0 32px !important;
+    margin: 0 !important;
+    box-shadow: -8px 0 32px rgba(0,0,0,0.12);
+    z-index: 150;
+    transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
+    list-style: none;
+    overflow-y: auto;
+  }
+  #navLinks.open {
+    right: 0;
+  }
+  #navLinks li {
+    width: 100%;
+    border-bottom: 1px solid var(--line);
+  }
+  #navLinks a {
+    display: block !important;
+    padding: 16px 28px !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    color: var(--ink-soft) !important;
+    border-radius: 0 !important;
+    background: none !important;
+  }
+  #navLinks a:hover,
+  #navLinks a.active {
+    color: var(--blue) !important;
+    background: var(--blue-soft) !important;
+  }
+}
+
+@media (min-width: 901px) {
+  .hamburger { display: none !important; }
+  .mobile-overlay { display: none !important; }
+  #navLinks {
+    display: flex !important;
+    position: static !important;
+    flex-direction: row !important;
+    right: auto !important;
+    width: auto !important;
+    background: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -908,17 +1023,24 @@ footer[data-page].page-active {
 <!-- NAV -->
 <nav id="nav">
   <div class="nav-logo"><img id="navLogo" src="" alt="HCR.ID"></div>
-  <ul class="nav-links">
-    <li><a href="#" onclick="showPage('home');return false;" data-page="home">Beranda</a></li>
-    <li><a href="#" onclick="showPage('context');return false;" data-page="context">Konteks</a></li>
-    <li><a href="#" onclick="showPage('philosophy');return false;" data-page="philosophy">Filosofi</a></li>
-    <li><a href="#" onclick="showPage('frameworks');return false;" data-page="frameworks">Framework</a></li>
-    <li><a href="#" onclick="showPage('syllabi');return false;" data-page="syllabi">Program</a></li>
-    <li><a href="#" onclick="showPage('gamification');return false;" data-page="gamification">Simulasi</a></li>
-    <li><a href="#" onclick="showPage('references');return false;" data-page="references">Referensi</a></li>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#" onclick="showPage('home');closeMobileMenu();return false;" data-page="home">Beranda</a></li>
+    <li><a href="#" onclick="showPage('context');closeMobileMenu();return false;" data-page="context">Konteks</a></li>
+    <li><a href="#" onclick="showPage('philosophy');closeMobileMenu();return false;" data-page="philosophy">Filosofi</a></li>
+    <li><a href="#" onclick="showPage('frameworks');closeMobileMenu();return false;" data-page="frameworks">Framework</a></li>
+    <li><a href="#" onclick="showPage('syllabi');closeMobileMenu();return false;" data-page="syllabi">Program</a></li>
+    <li><a href="#" onclick="showPage('gamification');closeMobileMenu();return false;" data-page="gamification">Simulasi</a></li>
+    <li><a href="#" onclick="showPage('references');closeMobileMenu();return false;" data-page="references">Referensi</a></li>
   </ul>
   <span class="nav-doc-label">Concept Doc v1.0 — Mei 2026</span>
+  <button class="hamburger" id="hamburger" onclick="toggleMobileMenu()" aria-label="Menu">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
 </nav>
+<!-- Mobile menu overlay -->
+<div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileMenu()"></div>
 
 <div id="page">
 
@@ -2170,6 +2292,28 @@ function buildProgramSubnav() {
 
   // Insert subnav before container
   container.parentNode.insertBefore(subnavEl, container);
+}
+
+
+/* Mobile menu */
+function toggleMobileMenu() {
+  const nav = document.getElementById("navLinks");
+  const btn = document.getElementById("hamburger");
+  const overlay = document.getElementById("mobileOverlay");
+  const isOpen = nav.classList.toggle("open");
+  btn.classList.toggle("open", isOpen);
+  overlay.classList.toggle("open", isOpen);
+  document.body.style.overflow = isOpen ? "hidden" : "";
+}
+
+function closeMobileMenu() {
+  const nav = document.getElementById("navLinks");
+  const btn = document.getElementById("hamburger");
+  const overlay = document.getElementById("mobileOverlay");
+  nav.classList.remove("open");
+  btn.classList.remove("open");
+  overlay.classList.remove("open");
+  document.body.style.overflow = "";
 }
 
 </script>
